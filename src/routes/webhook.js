@@ -19,12 +19,12 @@ router.post('/', async (req, res) => {
 
   if (!user.name && userState[from] !== 'awaiting_name') {
     userState[from] = 'awaiting_name';
-    reply = `שלום! אני Budget Bot 🤖\nאני עוזר לך לנהל את ההוצאות וההכנסות שלך.\n\nמה שמך?`;
+    reply = `היי! 👋 ברוך הבא ל-Budget Bot! 🤖💰\n\nאני הבוט החכם שיעזור לך לנהל את הכסף שלך בקלות - ישירות מוואטסאפ, בלי אפליקציות מסובכות!\n\nרק תגיד לי מה קנית, מה קיבלת - ואני אדאג לכל השאר 😊\n\nאז בוא נתחיל... מה שמך?`;
 
   } else if (userState[from] === 'awaiting_name') {
     await setUserName(from, body);
     delete userState[from];
-    reply = `נעים להכיר ${body}! 👋\n\nאיך אני עובד:\n• "קניתי קפה ב15 שקל"\n• "קיבלתי משכורת 8000 שקל"\n• "דוח" - סיכום חודשי\n• "תקציב" - לראות התקציבים שלך\n• "עזרה" - כל הפקודות`;
+    reply = `כיף להכיר אותך ${body}! 🎉\n\nאני כבר מוכן לעבוד בשבילך. הנה מה שאני יכול לעשות:\n\n💸 *להוציא הוצאה:*\n"קניתי קפה ב-15 שקל"\n"שילמתי דלק 200 שקל"\n\n💰 *לרשום הכנסה:*\n"קיבלתי משכורת 8000 שקל"\n\n📊 *לראות סיכום:* שלח "דוח"\n🎯 *לקבוע תקציב:* "הגדר תקציב אוכל 1000"\n❓ *עזרה:* שלח "עזרה"\n\nאז.. מה הייתה ההוצאה הראשונה שלך היום? 😄`;
 
   } else if (lower === 'דוח' || lower === 'סיכום') {
     const report = await getMonthlyReport(user.id);
@@ -56,7 +56,7 @@ router.post('/', async (req, res) => {
     const parsed = parseBudgetCommand(body);
     if (parsed) {
       await setBudget(user.id, parsed.category, parsed.limit);
-      reply = `✅ הוגדר תקציב לקטגוריה "${parsed.category}": ${parsed.limit}₪ לחודש\n\nאקהה אותך כשתגיע ל-80% ולכשתחרוג!`;
+      reply = `✅ סבבה ${user.name || ''}! הגדרתי לך תקציב של ${parsed.limit}₪ לחודש עבור "${parsed.category}" 🎯\n\nאתריע לך כשתגיע ל-80% - ואם תחרוג, תדע מייד 😊`;
     } else {
       reply = `לא הבנתי. נסה:\n"הגדר תקציב אוכל 1000"`;
     }
@@ -96,7 +96,7 @@ router.post('/', async (req, res) => {
         }
       }
     } else {
-      reply = `לא הבנתי 🤔\n\nנסה:\n"קניתי קפה ב15 שקל"\n"קיבלתי משכורת 8000 שקל"\n\nאו שלח "עזרה"`;
+      reply = `אופס, לא הצלחתי להבין 😅\n\nנסה לכתוב כך:\n• "קניתי קפה ב-15 שקל"\n• "שילמתי חשמל 300 שקל"\n• "קיבלתי משכורת 8000 שקל"\n\nאו שלח "עזרה" לרשימה מלאה 😊`;
     }
   }
 
