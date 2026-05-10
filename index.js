@@ -10,6 +10,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/version', (req, res) => res.json({ version: '2.0', updated: '2026-05-10' }));
 
 app.use('/webhook', require('./src/routes/webhook'));
 app.use('/dashboard', require('./src/routes/dashboard'));
