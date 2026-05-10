@@ -12,6 +12,9 @@ model User {
   phone          String        @unique
   name           String?
   dashboardToken String        @unique @default(uuid())
+  isPaid         Boolean       @default(false)
+  paidAt         DateTime?
+  stripeSessionId String?
   createdAt      DateTime      @default(now())
   transactions   Transaction[]
   categories     Category[]
