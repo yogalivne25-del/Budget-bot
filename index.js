@@ -16,6 +16,9 @@ app.use('/dashboard', require('./src/routes/dashboard'));
 app.use('/api', require('./src/routes/api'));
 app.use('/payment', require('./src/services/paymentService'));
 
+const { startScheduler } = require('./src/services/schedulerService');
+startScheduler();
+
 app.listen(PORT, () => {
   console.log(`Budget-bot server running on port ${PORT}`);
 });
