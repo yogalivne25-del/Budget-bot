@@ -338,12 +338,16 @@
     <button type="submit">📲 קבל גישה</button>
   </form>
   <div id="signup-success">
-    ✅ מעולה! תקבל הודעה בוואטסאפ בדקות הקרובות
+    <p style="font-size:1.1rem;margin-bottom:16px">✅ נרשמת בהצלחה!</p>
+    <a id="whatsapp-link" href="" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:white;color:#128C7E;padding:14px 28px;border-radius:30px;font-weight:700;font-size:1rem;text-decoration:none">
+      📲 פתח שיחה עם הבוט בוואטסאפ
+    </a>
+    <p style="margin-top:12px;font-size:0.85rem;opacity:0.85">לחץ על הכפתור ושלח את ההודעה הראשונה שלך</p>
   </div>
 </section>
 
 <footer>
-  <p>© 2025 Budget Bot · כל הזכויות שמורות</p>
+  <p>© 2026 Budget Bot · כל הזכויות שמורות</p>
 </footer>
 
 <script>
@@ -359,6 +363,9 @@
         body: JSON.stringify({ phone })
       });
       if (res.ok) {
+        const waNumber = '14155238886';
+        const waText = encodeURIComponent('join timberwolf-mastiff');
+        document.getElementById('whatsapp-link').href = `https://wa.me/${waNumber}?text=${waText}`;
         document.getElementById('signup-success').style.display = 'block';
         document.querySelector('.signup-form').style.display = 'none';
       }
