@@ -3,9 +3,13 @@ const router = express.Router();
 const Stripe = require('stripe');
 const prisma = require('../db');
 
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 const PRICE_ILS = 12700; // 127 שקל במאיות
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+
+function getStripe() {
+  if (!process.env.STRIPE_SECRET_KEY) throw new Error('STRIPE_SECRET_KEY is not set');
+  return Stripe(process.env.STRIPE_SECRET_KEY);
+}
 
 // יצירת session תשלום
 router.post('/create-checkout', async (req, res) => {
@@ -24,7 +28,7 @@ router.post('/create-checkout', async (req, res) => {
     return res.json({ alreadyPaid: true, dashboardUrl: `${BASE_URL}/dashboard?token=${user.dashboardToken}` });
   }
 
-  const session = await stripe.checkout.sessions.create({
+  const session = await getStripe().checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: [{
       price_data: {
@@ -57,7 +61,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    event = getStripe().webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
