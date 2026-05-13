@@ -3,6 +3,7 @@ const router = express.Router();
 const { findOrCreateUser, setUserName } = require('../services/userService');
 const { addTransaction, getMonthlyReport } = require('../services/transactionService');
 const { parseBudgetCommand, isDeleteLastCommand, setBudget, getBudgets, checkBudgetAlert, deleteLastTransaction } = require('../services/budgetService');
+const { addReminder, getReminders, deleteReminder, formatReminders } = require('../services/reminderService');
 const { sendWhatsApp } = require('../services/twilioService');
 
 const userState = {};
@@ -70,7 +71,35 @@ router.post('/', async (req, res) => {
     }
 
   } else if (lower === 'עזרה') {
-    reply = `היי ${user.name || ''}! הנה כל מה שאני יודע לעשות 😊\n\n💸 *רישום הוצאה:*\n"קניתי קפה ב-15 שקל"\n"שילמתי דלק 200 שקל"\n\n💰 *רישום הכנסה:*\n"קיבלתי משכורת 8000 שקל"\n\n📊 "דוח" - סיכום חודשי\n🎯 "תקציב" - לראות תקציבים\n⚙️ "הגדר תקציב אוכל 1000"\n🗑️ "מחק הוצאה אחרונה"\n🌐 "לינק" - דשבורד אישי\n\n📅 כל יום ראשון תקבל סיכום שבועי אוטומטי!`;
+    reply = `היי ${user.name || ''}! הנה כל מה שאני יודע לעשות 😊\n\n💸 *רישום הוצאה:*\n"קניתי קפה ב-15 שקל"\n"שילמתי דלק 200 שקל"\n\n💰 *רישום הכנסה:*\n"קיבלתי משכורת 8000 שקל"\n\n📊 "דוח" - סיכום חודשי\n🎯 "תקציב" - לראות תקציבים\n⚙️ "הגדר תקציב אוכל 1000"\n🗑️ "מחק הוצאה אחרונה"\n🌐 "לינק" - דשבורד אישי\n\n⏰ *תזכורות:*\n"תזכורת שכר דירה ב-1 לחודש"\n"תזכורת חשמל ב-15 לחודש"\n"תזכורת ישיבה כל שני"\n"תזכורות" - לראות כל התזכורות\n"מחק תזכורת 1" - למחיקה\n\n📅 כל יום ראשון תקבל דוח שבועי עם מצב תקציבים!`;
+
+  } else if (lower === 'תזכורות') {
+    const reminders = await getReminders(user.id);
+    reply = formatReminders(reminders);
+
+  } else if (lower.startsWith('תזכורת ')) {
+    const result = await addReminder(user.id, body);
+    if (result) {
+      const { parsed } = result;
+      const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+      let when = '';
+      if (parsed.dayOfMonth) when = `ב-${parsed.dayOfMonth} לכל חודש`;
+      else if (parsed.dayOfWeek !== undefined) when = `כל יום ${dayNames[parsed.dayOfWeek]}`;
+      reply = `⏰ תזכורת נקבעה!\n\n"${parsed.text}"\n${when}\n\nאשלח לך תזכורת ב-09:00 בבוקר 😊\n\nלראות כל התזכורות: "תזכורות"`;
+    } else {
+      reply = `לא הצלחתי להבין את התזכורת 😅\n\nנסה כך:\n• "תזכורת שכר דירה ב-1 לחודש"\n• "תזכורת חשמל ב-15 לחודש"\n• "תזכורת ישיבה כל שני"`;
+    }
+
+  } else if (/מחק תזכורת/.test(lower)) {
+    const numMatch = lower.match(/מחק תזכורת\s*(\d+)/);
+    if (numMatch) {
+      const deleted = await deleteReminder(user.id, parseInt(numMatch[1]));
+      reply = deleted
+        ? `🗑️ התזכורת נמחקה:\n"${deleted.text}"`
+        : `לא נמצאה תזכורת במספר זה. שלח "תזכורות" לרשימה.`;
+    } else {
+      reply = `שלח "מחק תזכורת 1" עם המספר מהרשימה.\nלרשימה שלח "תזכורות".`;
+    }
 
   } else if (lower === 'לינק' || lower === 'דשבורד') {
     const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
