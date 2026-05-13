@@ -1,40 +1,53 @@
 const prisma = require('../db');
 
-const CATEGORIES = ['אוכל', 'תחבורה', 'בילויים', 'קניות', 'בריאות', 'חשבונות', 'אחר'];
+function autoCategory(text) {
+  const lower = text.toLowerCase();
+  if (/קפה|אוכל|מסעדה|סופר|מכולת|פיצה|סושי|ארוחה|לחם|חלב|מינימרקט|שוק|מזון|אכלתי/.test(lower)) return 'אוכל';
+  if (/דלק|אוטובוס|רכבת|מונית|אובר|גט|פארקינג|חניה|אוטו|רכב/.test(lower)) return 'תחבורה';
+  if (/בר|סרט|בילוי|פאב|מועדון|קונצרט|ספורט|כרטיס|אירוע|בידור/.test(lower)) return 'בילויים';
+  if (/חשמל|מים|ארנונה|אינטרנט|טלפון|גז|ביטוח|ועד/.test(lower)) return 'חשבונות';
+  if (/רופא|תרופה|בית חולים|קופת חולים|פארמה|אחות|בריאות|רפואה/.test(lower)) return 'בריאות';
+  if (/חנות|קניון|אמזון|אלקטרוניקה|בגד|נעל|ביגוד|קנית|קניה/.test(lower)) return 'קניות';
+  if (/שכ"ד|שכירות|דירה/.test(lower)) return 'שכ"ד';
+  if (/הלוואה|קרדיט|החזר/.test(lower)) return 'הלוואות';
+  return null; // לא בטוח → ישאל משתמש
+}
 
 function parseMessage(text) {
-  const lower = text.toLowerCase().trim();
+  const lower = text.trim();
 
-  const expensePatterns = [
-    /שילמתי|קניתי|הוצאתי|עלה לי|עלתה לי|קנה|שלמתי/,
-  ];
-  const incomePatterns = [
-    /קיבלתי|הכנסה|משכורת|הכנסתי|נכנס לי/,
-  ];
-
-  const amountMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:₪|שקל|שח|ש"ח)?/);
+  const amountMatch = text.match(/(\d+(?:\.\d+)?)/);
   if (!amountMatch) return null;
 
   const amount = parseFloat(amountMatch[1]);
+  if (amount <= 0) return null;
 
-  const isExpense = expensePatterns.some(p => p.test(lower));
-  const isIncome = incomePatterns.some(p => p.test(lower));
+  const isIncome = /קיבלתי|משכורת|הכנסה|נכנס לי|הכנסתי|בונוס/.test(lower);
 
-  if (!isExpense && !isIncome) return null;
+  const cleaned = text
+    .replace(amountMatch[0], '')
+    .replace(/₪|שקל|שח|ש"ח/g, '')
+    .replace(/קיבלתי|קניתי|שילמתי|הוצאתי|עלה לי|קנה|שלמתי|הכנסה|נכנס לי|הכנסתי/g, '')
+    .trim();
 
-  const type = isIncome ? 'income' : 'expense';
+  if (isIncome) {
+    return {
+      amount,
+      type: 'income',
+      category: 'הכנסה',
+      description: cleaned || 'הכנסה',
+      isConfident: true,
+    };
+  }
 
-  let category = 'אחר';
-  if (/קפה|אוכל|מסעדה|סופר|מכולת|פיצה|סושי/.test(lower)) category = 'אוכל';
-  else if (/דלק|אוטובוס|רכבת|מונית|אובר/.test(lower)) category = 'תחבורה';
-  else if (/בר|סרט|בילוי|פאב|מועדון/.test(lower)) category = 'בילויים';
-  else if (/חשמל|מים|ארנונה|אינטרנט|טלפון/.test(lower)) category = 'חשבונות';
-  else if (/רופא|תרופה|בית חולים|קופת חולים/.test(lower)) category = 'בריאות';
-  else if (/חנות|קניון|אמזון/.test(lower)) category = 'קניות';
-
-  const descriptionMatch = text.replace(amountMatch[0], '').trim();
-
-  return { amount, type, category, description: descriptionMatch || null };
+  const category = autoCategory(text);
+  return {
+    amount,
+    type: 'expense',
+    category: category || 'אחר',
+    description: cleaned || text,
+    isConfident: category !== null,
+  };
 }
 
 async function addTransaction(userId, text) {
@@ -50,8 +63,13 @@ async function addTransaction(userId, text) {
       description: parsed.description,
     },
   });
-
   return { transaction, parsed };
+}
+
+async function addTransactionDirect(userId, amount, type, category, description) {
+  return prisma.transaction.create({
+    data: { userId, amount, type, category, description },
+  });
 }
 
 async function getMonthlyReport(userId) {
@@ -78,4 +96,4 @@ async function getMonthlyReport(userId) {
   return { totalExpenses, totalIncome, balance: totalIncome - totalExpenses, byCategory, transactions };
 }
 
-module.exports = { addTransaction, getMonthlyReport, parseMessage, CATEGORIES };
+module.exports = { addTransaction, addTransactionDirect, getMonthlyReport, parseMessage, autoCategory };

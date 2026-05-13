@@ -8,17 +8,17 @@ datasource db {
 }
 
 model User {
-  id             String        @id @default(uuid())
-  phone          String        @unique
-  name           String?
-  dashboardToken String        @unique @default(uuid())
-  isPaid         Boolean       @default(false)
-  paidAt         DateTime?
-  stripeSessionId String?
-  createdAt      DateTime      @default(now())
-  transactions   Transaction[]
-  categories     Category[]
-  reminders      Reminder[]
+  id                String             @id @default(uuid())
+  phone             String             @unique
+  name              String?
+  dashboardToken    String             @unique @default(uuid())
+  isPaid            Boolean            @default(false)
+  paidAt            DateTime?
+  stripeSessionId   String?
+  createdAt         DateTime           @default(now())
+  transactions      Transaction[]
+  categories        Category[]
+  fixedTransactions FixedTransaction[]
 }
 
 model Transaction {
@@ -40,14 +40,14 @@ model Category {
   budgetLimit Float?
 }
 
-model Reminder {
-  id         String   @id @default(uuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id])
-  text       String
-  dayOfMonth Int?
-  dayOfWeek  Int?
-  hour       Int      @default(9)
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
+model FixedTransaction {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  amount      Float
+  type        String
+  category    String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
 }
